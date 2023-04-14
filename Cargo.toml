@@ -10,3 +10,9 @@ tokio = { version ="1.20.0", features = ["full"] }
 rust-s3="0.32.3"
 aws-region = "0.25.1"
 aws-creds = "0.34.0"
+sqlx = {version="0.6.2",features = [ "runtime-tokio-native-tls" , "postgres","all-types","macros" ]}
+# 时间
+chrono = {version = "0.4.23",features=["serde"]}
+# 序列化
+serde = {version = "1.0.147",features=["derive"]}
+serde_json = "1.0.88"
