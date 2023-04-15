@@ -1,10 +1,11 @@
-
+use actix_cors::Cors;
+use actix_web::{get, http, web, App, HttpRequest, HttpResponse, HttpServer};
 mod minio_client;
 mod pg_client;
 mod utils;
-#[tokio::main]
-pub async fn main() {
-    //let res =minio_client::minio::put_object("xxx","xxx.pdf").await;
+#[actix_rt::main]
+async fn main(){
+   /*  //let res =minio_client::minio::put_object("xxx","xxx.pdf").await;
 
     //minio_client::minio::get_object("个人简历.pdf","xxx.pdf").await;
     let pick_up_code = utils::nanoid::get_nanoid();
@@ -21,6 +22,7 @@ pub async fn main() {
     //let res = pg_client::pg::select_box_info(pick_up_code).await.unwrap();
     //println!("{:?}", res);
     //let ok = pg_client::pg::update_box_info(pick_up_code, 50).await;
-    //println!("{}", ok);
+    //println!("{}", ok); */
+
     
 }
