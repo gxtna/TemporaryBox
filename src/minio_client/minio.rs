@@ -2,6 +2,7 @@ use awsregion::Region;
 use s3::creds::Credentials;
 use s3::error::S3Error;
 use s3::Bucket;
+use s3::request_trait::ResponseData;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
@@ -28,11 +29,12 @@ pub async fn create_minio() -> Bucket {
     bucket
 }
 
-pub async fn get_object(object_name: &str, local_path: &str) {
+pub async fn get_object(object_name: &str) -> ResponseData{
     let bucket = create_minio().await;
     let response = bucket.get_object(object_name).await.unwrap();
-    let mut file = File::create(local_path).unwrap();
-    file.write_all(response.bytes()).unwrap();
+    response
+    //let mut file = File::create(local_path).unwrap();
+    //file.write_all(response.bytes()).unwrap();
 }
 pub async fn put_object(local_path: &str, remote_path: &str) -> Result<u16, S3Error> {
     let bucket = create_minio().await;

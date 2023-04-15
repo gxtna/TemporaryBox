@@ -1,10 +1,12 @@
-use actix_cors::Cors;
-use actix_web::{get, http, web, App, HttpRequest, HttpResponse, HttpServer};
+
 mod minio_client;
 mod pg_client;
 mod utils;
+mod actix_client;
 #[actix_rt::main]
 async fn main(){
+    actix_client::routers::client_server().await.unwrap()
+    
    /*  //let res =minio_client::minio::put_object("xxx","xxx.pdf").await;
 
     //minio_client::minio::get_object("个人简历.pdf","xxx.pdf").await;
