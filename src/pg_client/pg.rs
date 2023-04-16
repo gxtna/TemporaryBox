@@ -42,6 +42,15 @@ impl BoxInfo {
             update_time: ndt,
         }
     }
+    pub fn pick_up_code(&self) ->String{
+        self.pick_up_code.to_string()   
+    }
+    pub fn file_name(&self) -> String{
+        self.file_name.to_string()
+    }
+    pub fn file_remote_name(&self) -> String{
+        self.file_remote_name.to_string()
+    }
 }
 async fn sql_connection() -> PgConnection {
     let connection = PgConnection::connect("postgres://root:123456@localhost:5432/database")

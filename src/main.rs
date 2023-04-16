@@ -25,6 +25,7 @@ async fn main(){
     //println!("{:?}", res);
     //let ok = pg_client::pg::update_box_info(pick_up_code, 50).await;
     //println!("{}", ok); */
-
-    
+    //let x =serde_json::json!("pickUpCode=123456");
+    //let z = x["pickUpCode"].;
+    //println!("{}",z);
 }
