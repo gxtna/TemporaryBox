@@ -2,7 +2,6 @@ use awsregion::Region;
 use s3::creds::Credentials;
 use s3::error::S3Error;
 use s3::Bucket;
-use std::fs;
 pub async fn create_minio() -> Bucket {
     let credentials = Credentials::new(
         Some("TgNBUh5gZ0kj5KeT"),
@@ -31,10 +30,9 @@ pub async fn get_object(object_name: &str) -> Vec<u8>{
     let response = bucket.get_object(object_name).await.unwrap();
     response.bytes().to_vec()
 }
-pub async fn put_object(local_path: &str, remote_path: &str) -> Result<u16, S3Error> {
+pub async fn put_object(file:Vec<u8>, remote_path: &str) -> Result<u16, S3Error> {
     let bucket = create_minio().await;
-    let content = fs::read(local_path).unwrap();
-    let response = bucket.put_object(remote_path, &content).await;
+    let response = bucket.put_object(remote_path, &file).await;
     match response {
         Ok(response) => Ok(response.status_code()),
         Err(respnse) => Err(respnse),

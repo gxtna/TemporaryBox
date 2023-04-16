@@ -1,7 +1,7 @@
 
 use chrono::{Local, NaiveDateTime};
 use serde::{Deserialize, Serialize};
-use sqlx::{postgres::{PgConnection, PgQueryResult}, Connection, Postgres};
+use sqlx::{postgres::{PgConnection}, Connection, Postgres};
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
 pub struct BoxInfo {

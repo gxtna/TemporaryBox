@@ -1,6 +1,6 @@
 use nanoid::nanoid;
 
-pub fn get_nanoid()->String {
+pub fn pick_up_code()->String {
     let alphabet: [char; 62] = [
         '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 
         'a', 'b', 'c', 'd', 'e', 'f','g', 'h', 'i', 'j', 'k', 'l','m', 'n','o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
