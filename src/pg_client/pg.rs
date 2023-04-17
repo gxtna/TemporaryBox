@@ -5,7 +5,6 @@ use sqlx::{postgres::{PgConnection}, Connection, Postgres};
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
 pub struct BoxInfo {
-    id: i32,
     file_name: String,
     file_remote_name: String,
     bucket_name: String,
@@ -20,7 +19,6 @@ pub struct BoxInfo {
 
 impl BoxInfo {
     pub fn new(
-        id: i32,
         file_name: String,
         file_remote_name: String,
         bucket_name: String,
@@ -29,11 +27,10 @@ impl BoxInfo {
         let now = Local::now().timestamp_millis();
         let ndt = NaiveDateTime::from_timestamp_millis(now).unwrap();
         Self {
-            id,
             file_name,
             file_remote_name,
             bucket_name,
-            storage_time: 12, // TDDO  默认的保存时间是12小时
+            storage_time: 1, // TDDO  默认的保存时间是1天
             pick_up_code,
             login_type: 1,                     // TDDO 默认就是1 pc登录
             file_remote_path: "/".to_string(), // TODO 默认就存放在根目录下
@@ -41,9 +38,6 @@ impl BoxInfo {
             create_time: ndt,
             update_time: ndt,
         }
-    }
-    pub fn pick_up_code(&self) ->String{
-        self.pick_up_code.to_string()   
     }
     pub fn file_name(&self) -> String{
         self.file_name.to_string()
@@ -63,10 +57,9 @@ pub async fn insert_box_info(box_info: BoxInfo) -> bool {
     let mut connection = sql_connection().await;
     let sql = sqlx::query(
         "insert into box_info 
-    (id,file_name,file_remote_name,bucket_name,storage_time,pick_up_code,login_type,file_remote_path,system_type,create_time,update_time) 
-    values ( $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
+    (file_name,file_remote_name,bucket_name,storage_time,pick_up_code,login_type,file_remote_path,system_type,create_time,update_time) 
+    values ( $1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
     )
-    .bind(box_info.id)
     .bind(box_info.file_name)
     .bind(box_info.file_remote_name)
     .bind(box_info.bucket_name)

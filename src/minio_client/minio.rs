@@ -2,6 +2,7 @@ use awsregion::Region;
 use s3::creds::Credentials;
 use s3::error::S3Error;
 use s3::Bucket;
+use serde::*;
 pub async fn create_minio() -> Bucket {
     let credentials = Credentials::new(
         Some("TgNBUh5gZ0kj5KeT"),
@@ -46,4 +47,26 @@ pub async fn delete_object(object_name: &str) -> Result<u16, S3Error>{
         Ok(response) => Ok(response.status_code()),
         Err(respnse) => Err(respnse),
     }
+}
+
+pub async fn list_objects(){
+    let bucket = create_minio().await;
+    let response = bucket.list("".to_string(), Some("".to_string())).await.unwrap();
+    /* for res in response {
+        println!("{:?}",serde_json::from_str(res.contents).unwrap());
+    
+    } */
+    
+}
+
+#[derive(Debug,Deserialize,Serialize)]
+struct Contents{
+    last_modified:String,
+    e_tag:Option<String>,
+    storage_class:Option<String>,
+    key:String,
+    owner:Option<String>,
+    display_name:Option<String>,
+    id:String,
+    size:i128,
 }

@@ -1,20 +1,22 @@
-
-use chrono::Local;
-use actix_cors::Cors;
-use actix_easy_multipart::tempfile::Tempfile;
-use actix_web::{get, http, post, App, HttpResponse, HttpServer, Responder, web,HttpRequest};
-use actix_web::http::header::{
-    ContentDisposition, DispositionParam, DispositionType
-};
-use actix_easy_multipart::*;
-use serde::{Serialize,Deserialize};
 use crate::minio_client::minio;
 use crate::pg_client::pg::{self, BoxInfo};
 use crate::utils::nanoid;
+use actix_cors::Cors;
+use actix_easy_multipart::tempfile::Tempfile;
+use actix_easy_multipart::*;
+use actix_web::http::header::{ContentDisposition, DispositionParam, DispositionType};
+use actix_web::{get, http, post, web, App, HttpResponse, HttpServer, Responder};
+use chrono::Local;
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize,Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct Param {
     pick_up_code: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
+struct StorageTimeParam {
+    pick_up_code: String,
+    storage_time: i32,
 }
 
 pub async fn client_server() -> std::io::Result<()> {
@@ -30,26 +32,27 @@ pub async fn client_server() -> std::io::Result<()> {
             .wrap(cors)
             .service(download_file)
             .service(upload_file)
+            .service(extend_storage_time)
     })
     .bind("127.0.0.1:8080")?
     .run()
     .await
 }
 
-#[get("/downloadFile")]
-async fn download_file(param:web::Query<Param>) ->impl Responder {
-    let box_info = pg::select_box_info(param.pick_up_code.to_string()).await.unwrap();
+#[get("/download_file")]
+async fn download_file(param: web::Query<Param>) -> impl Responder {
+    let box_info = pg::select_box_info(param.pick_up_code.to_string())
+        .await
+        .unwrap();
     let data = minio::get_object(&box_info.file_remote_name()).await;
     let cd = ContentDisposition {
         disposition: DispositionType::FormData,
-        parameters: vec![
-            DispositionParam::Filename(box_info.file_name().to_string()),
-        ],
+        parameters: vec![DispositionParam::Filename(box_info.file_name().to_string())],
     };
     let mut builder = HttpResponse::Ok();
     builder.content_type("application/octet-stream");
     // 设置 代表前端可以在Content-Disposition获取数据
-    builder.append_header(("Access-Control-Expose-Headers","Content-Disposition"));
+    builder.append_header(("Access-Control-Expose-Headers", "Content-Disposition"));
     builder.insert_header((actix_web::http::header::CONTENT_DISPOSITION, cd));
     builder.body(data)
 }
@@ -59,9 +62,9 @@ struct Upload {
     files: Tempfile,
 }
 
-#[post("/uploadFile")]
+#[post("/upload_file")]
 async fn upload_file(files: MultipartForm<Upload>) -> impl Responder {
-    let items:Vec<&str>  = files.files.file_name.as_ref().unwrap().split(".").collect();
+    let items: Vec<&str> = files.files.file_name.as_ref().unwrap().split(".").collect();
     let content = std::fs::read(files.files.file.path()).unwrap();
     let mut file_name = String::new();
     let name = items[0];
@@ -80,17 +83,28 @@ async fn upload_file(files: MultipartForm<Upload>) -> impl Responder {
     remote_name.push_str(suffix);
     let pick_up_code_copy = pick_up_code.clone();
     let mut remote_name_copy = remote_name.clone();
-    let res =minio::put_object(content,&mut remote_name).await.unwrap();
+    let res = minio::put_object(content, &mut remote_name).await.unwrap();
     if res == 200 {
-        let insert_bool = pg::insert_box_info(BoxInfo::new(1, file_name, remote_name, "test1".to_string(),pick_up_code)).await;
+        let insert_bool = pg::insert_box_info(BoxInfo::new(
+            file_name,
+            remote_name,
+            "test1".to_string(),
+            pick_up_code,
+        ))
+        .await;
         if insert_bool {
             HttpResponse::Ok().body(pick_up_code_copy)
-        }else {
+        } else {
             minio::delete_object(&mut remote_name_copy).await.unwrap();
             HttpResponse::Ok().body("上传错误")
-
         }
-    }else {
+    } else {
         HttpResponse::Ok().body("上传错误")
     }
+}
+
+#[post("/extend_storage_time")]
+async fn extend_storage_time(param: web::Json<StorageTimeParam>) -> impl Responder {
+    let is_ok = pg::update_box_info(param.pick_up_code.to_string(), param.storage_time).await;
+    HttpResponse::Ok().body(is_ok.to_string())
 }
