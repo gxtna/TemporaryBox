@@ -2,7 +2,6 @@ use awsregion::Region;
 use s3::creds::Credentials;
 use s3::error::S3Error;
 use s3::Bucket;
-use serde::*;
 pub async fn create_minio() -> Bucket {
     let credentials = Credentials::new(
         Some("TgNBUh5gZ0kj5KeT"),
@@ -40,33 +39,24 @@ pub async fn put_object(file:Vec<u8>, remote_path: &str) -> Result<u16, S3Error>
     }
 }
 
-pub async fn delete_object(object_name: &str) -> Result<u16, S3Error>{
+pub async fn delete_object(object_name: &str) -> Result<(), S3Error>{
     let bucket = create_minio().await;
     let response = bucket.delete_object(object_name).await;
     match response {
-        Ok(response) => Ok(response.status_code()),
+        Ok(_response) => Ok(()),
         Err(respnse) => Err(respnse),
     }
 }
 
-pub async fn list_objects(){
+#[warn(dead_code)]
+pub async fn list_objects() -> Vec<String>{
     let bucket = create_minio().await;
     let response = bucket.list("".to_string(), Some("".to_string())).await.unwrap();
-    /* for res in response {
-        println!("{:?}",serde_json::from_str(res.contents).unwrap());
-    
-    } */
-    
-}
-
-#[derive(Debug,Deserialize,Serialize)]
-struct Contents{
-    last_modified:String,
-    e_tag:Option<String>,
-    storage_class:Option<String>,
-    key:String,
-    owner:Option<String>,
-    display_name:Option<String>,
-    id:String,
-    size:i128,
+    let mut names = Vec::new();
+    for res in response {
+        for con in res.contents {
+            names.push(con.key)
+        }
+    }
+    names
 }
