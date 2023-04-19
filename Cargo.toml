@@ -24,3 +24,7 @@ actix-web = "4.2.1"
 actix-cors = "0.6.4"
 actix-easy-multipart = "3.0.0"
 delay_timer = "0.11.3"
+
+log = "0.4.17"
+
+toml = "0.5.9"
