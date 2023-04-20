@@ -1,58 +1,64 @@
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;
-#[derive(Debug, Serialize, Deserialize)]
-struct PostgreSQLConfig {
-    url: Option<String>,
+use log::error;
+
+#[derive(Debug, Serialize, Deserialize,Default,Clone)]
+pub struct PostgreSQLConfig {
+    url: String,
 }
+
 
 impl PostgreSQLConfig {
-    /* pub fn url(&self) -> Option<String> {
+    pub fn url(self) -> String {
         self.url
-    } */
+    }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize,Default,Clone)]
 pub struct MinioConfig {
-    access_key: Option<String>,
-    secret_key: Option<String>,
-    region: Option<String>,
-    enpoint: Option<String>,
-    bucket_name: Option<String>,
+    access_key: String,
+    secret_key: String,
+    region: String,
+    endpoint: String,
+    bucket_name: String,
 }
+
 impl MinioConfig{
-    pub fn access_key(self) -> Option<String>  {
+    
+    pub fn access_key(self) -> String  {
         self.access_key
     }
-    /* pub fn secret_key(&self) -> Option<String>  {
+    pub fn secret_key(self) -> String  {
         self.secret_key
     }
-    pub fn region(&self) -> Option<String>  {
+    pub fn region(self) -> String  {
         self.region
     }
-    pub fn enpoint(&self) -> Option<String>  {
-        self.enpoint
+    pub fn enpoint(self) -> String  {
+        self.endpoint
     }
-    pub fn bucket_name(&self) -> Option<String>  {
+    pub fn bucket_name(self) -> String  {
         self.bucket_name
-    } */
+    }
 }
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    postgres: Option<PostgreSQLConfig>,
-    minio: Option<MinioConfig>,
+    postgres: PostgreSQLConfig,
+    minio: MinioConfig,
 }
 
 impl Config {
-    pub fn postgres(self) -> Option<PostgreSQLConfig> {
+    pub fn postgres(self) -> PostgreSQLConfig {
         self.postgres
     }
-    pub fn minio(self) -> Option<MinioConfig> {
+    pub fn minio(self) -> MinioConfig {
         self.minio
     }
 }
 
-pub fn read_conf() -> Config {
+pub fn read_conf() -> Config{
+
     let file_path = "config.toml";
     let mut file = match File::open(file_path) {
         Ok(f) => f,

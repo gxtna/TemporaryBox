@@ -2,21 +2,29 @@ use awsregion::Region;
 use s3::creds::Credentials;
 use s3::error::S3Error;
 use s3::Bucket;
+use crate::utils::config;
+
 pub async fn create_minio() -> Bucket {
+    let conf = config::read_conf().minio();
+    let access_key = conf.clone().access_key();
+    let secret_key = conf.clone().secret_key();
+    let bucket_name = conf.clone().bucket_name();
+    let region = conf.clone().region();
+    let endpoint = conf.clone().enpoint();
     let credentials = Credentials::new(
-        Some("TgNBUh5gZ0kj5KeT"),
-        Some("ECU9cTmjwtgJWTf6GXHqL0JdtH8cA0Tb"),
+        Some(&access_key),
+        Some(&secret_key),
         None,
         None,
         None,
     )
     .unwrap();
-    let name = "test1";
+    let name = &bucket_name;
     let bucket = Bucket::new(
         name,
         Region::Custom {
-            region: "eu-central-1".to_owned(),
-            endpoint: "http://localhost:9000".to_owned(),
+            region,
+            endpoint,
         },
         credentials,
     )
