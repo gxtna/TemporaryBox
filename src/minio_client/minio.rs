@@ -3,6 +3,7 @@ use s3::creds::Credentials;
 use s3::error::S3Error;
 use s3::Bucket;
 use crate::utils::config;
+use log::error;
 
 pub async fn create_minio() -> Bucket {
     let conf = config::read_conf().minio();

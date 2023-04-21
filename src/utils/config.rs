@@ -72,3 +72,20 @@ pub fn read_conf() -> Config{
     let config: Config = toml::from_str(&str_val).unwrap();
     config
 }
+#[warn(dead_code)]
+fn test() -> Result<Config,()>{
+    let x = test().unwrap();
+    let file_path = "config.toml";
+    let mut file = match File::open(file_path) {
+        Ok(f) => f,
+        Err(e) => panic!("no such file {} exception:{}", file_path, e),
+    };
+    let mut str_val = String::new();
+    match file.read_to_string(&mut str_val) {
+        Ok(s) => s,
+        Err(e) => panic!("Error Reading file: {}", e),
+    };
+    let config: Config = toml::from_str(&str_val).unwrap();
+    Ok(config)
+    
+}

@@ -7,9 +7,11 @@ edition = "2021"
 
 [dependencies]
 tokio = { version ="1.20.0", features = ["full"] }
+# 链接minio
 rust-s3="0.32.3"
 aws-region = "0.25.1"
 aws-creds = "0.34.0"
+# 数据库
 sqlx = {version="0.6.2",features = [ "runtime-tokio-native-tls" , "postgres","all-types","macros" ]}
 # 时间
 chrono = {version = "0.4.23",features=["serde"]}
@@ -18,13 +20,15 @@ serde = {version = "1.0.147",features=["derive"]}
 serde_json = "1.0.88"
 #随机数生成
 nanoid="0.4.0"
-
+# web框架
 actix-rt = "2.7.0"
 actix-web = "4.2.1"
 actix-cors = "0.6.4"
 actix-easy-multipart = "3.0.0"
+# 定时任务
 delay_timer = "0.11.3"
-
+#日志两个要一起用
 log = "0.4.17"
-
+log4rs = "1.2.0"
+# 读取toml文件
 toml = "0.5.9"
