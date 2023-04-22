@@ -1,8 +1,10 @@
+use crate::utils::config;
 use crate::utils::time;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgConnection, Connection, Postgres};
-use crate::utils::config;
+use log::error;
+
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
 pub struct BoxInfo {
@@ -53,7 +55,13 @@ impl BoxInfo {
     }
 }
 async fn sql_connection() -> PgConnection {
-    let url =config::read_conf().postgres().clone().url();
+    let conf = config::read_conf()
+        .map_err(|err| {
+            error!("{}", err);
+        })
+        .unwrap()
+        .postgres();
+    let url = conf.clone().url();
     let connection = PgConnection::connect(&url)
         .await
         .expect("get database connection eror");

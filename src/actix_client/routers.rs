@@ -1,5 +1,6 @@
 use crate::minio_client::minio;
 use crate::pg_client::pg::{self, BoxInfo};
+use crate::utils::config;
 use crate::utils::nanoid;
 use actix_cors::Cors;
 use actix_easy_multipart::tempfile::Tempfile;
@@ -7,9 +8,8 @@ use actix_easy_multipart::*;
 use actix_web::http::header::{ContentDisposition, DispositionParam, DispositionType};
 use actix_web::{get, http, post, web, App, HttpResponse, HttpServer, Responder};
 use chrono::Local;
+use log::error;
 use serde::{Deserialize, Serialize};
-use crate::utils::config;
-
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Param {
@@ -22,10 +22,15 @@ struct StorageTimeParam {
 }
 
 pub async fn client_server() -> std::io::Result<()> {
-    let config = config::read_conf().web();
+    let config = config::read_conf()
+        .map_err(|err| {
+            error!("{}", err);
+        })
+        .unwrap()
+        .web();
     let config_temp = config.clone();
     HttpServer::new(move || {
-        // 跨域配置的时候 http 和https 要单独配置才行，
+        // 跨域配置的时候 http 和https 要单独配置才行
         let cors = Cors::default()
             .allowed_origin(&config.clone().cros())
             .allowed_methods(vec!["GET", "POST"])

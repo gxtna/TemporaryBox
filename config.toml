@@ -1,18 +1,18 @@
 [postgres]
-url="postgres://root:123456@localhost:5432/database"
+url = "postgres://root:123456@localhost:5432/database"
 
 
 [minio]
-access_key="TgNBUh5gZ0kj5KeT"
-secret_key="ECU9cTmjwtgJWTf6GXHqL0JdtH8cA0Tb"
-region="eu-central-1"
-endpoint="http://localhost:9000"
-bucket_name="test1"
+access_key = "TgNBUh5gZ0kj5KeT"
+secret_key = "ECU9cTmjwtgJWTf6GXHqL0JdtH8cA0Tb"
+region = "eu-central-1"
+endpoint = "http://localhost:9000"
+bucket_name = "test1"
 
 [web]
 # 配置跨域的 有问题现在
-cros="http://localhost:5173"
-address="127.0.0.1:8080"
+cros = "http://localhost:5173"
+address = "127.0.0.1:8080"
 
 [timer]
-cron="0 0 23 * * *"
+cron = "0 0 23 * * *"
