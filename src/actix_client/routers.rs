@@ -8,6 +8,8 @@ use actix_web::http::header::{ContentDisposition, DispositionParam, DispositionT
 use actix_web::{get, http, post, web, App, HttpResponse, HttpServer, Responder};
 use chrono::Local;
 use serde::{Deserialize, Serialize};
+use crate::utils::config;
+
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Param {
@@ -20,10 +22,12 @@ struct StorageTimeParam {
 }
 
 pub async fn client_server() -> std::io::Result<()> {
+    let config = config::read_conf().web();
+    let config_temp = config.clone();
     HttpServer::new(move || {
+        // 跨域配置的时候 http 和https 要单独配置才行，
         let cors = Cors::default()
-            .allowed_origin("http://localhost:5173")
-            .allowed_origin_fn(|origin, _req_head| origin.as_bytes().ends_with(b".rust-lang.org"))
+            .allowed_origin(&config.clone().cros())
             .allowed_methods(vec!["GET", "POST"])
             .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
             .allowed_header(http::header::CONTENT_TYPE)
@@ -34,7 +38,7 @@ pub async fn client_server() -> std::io::Result<()> {
             .service(upload_file)
             .service(extend_storage_time)
     })
-    .bind("127.0.0.1:8080")?
+    .bind(config_temp.clone().address())?
     .run()
     .await
 }

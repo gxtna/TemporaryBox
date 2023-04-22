@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;
-use log::error;
+
 
 #[derive(Debug, Serialize, Deserialize,Default,Clone)]
 pub struct PostgreSQLConfig {
@@ -42,10 +42,34 @@ impl MinioConfig{
         self.bucket_name
     }
 }
+
+
+#[derive(Debug, Serialize, Deserialize,Default,Clone)]
+pub struct WebConfig{
+    cros:String,
+    address:String,
+}
+
+impl WebConfig {
+    pub fn cros(self)->String { self.cros }
+    pub fn address(self) -> String { self.address }
+}
+
+#[derive(Debug, Serialize, Deserialize,Default,Clone)]
+pub struct TimerConfig{
+    cron:String,
+}
+
+impl TimerConfig {
+    pub fn cros(self)->String {self.cron}
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     postgres: PostgreSQLConfig,
     minio: MinioConfig,
+    web:WebConfig,
+    timer:TimerConfig,
 }
 
 impl Config {
@@ -54,6 +78,12 @@ impl Config {
     }
     pub fn minio(self) -> MinioConfig {
         self.minio
+    }
+    pub fn web(self) -> WebConfig{
+        self.web
+    }
+    pub fn timer(self) -> TimerConfig{
+        self.timer
     }
 }
 

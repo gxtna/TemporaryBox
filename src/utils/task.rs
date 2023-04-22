@@ -2,7 +2,7 @@
 use delay_timer::prelude::*;
 use crate::minio_client::minio;
 use crate::pg_client::pg;
-use crate::utils::time;
+use crate::utils::{time,config};
 
 pub async fn task_build(){
     let delay_timer_builder = DelayTimerBuilder::default().build();
@@ -10,12 +10,13 @@ pub async fn task_build(){
 }
 
 async fn timer_delete_task() ->Task{
+    let config = config::read_conf().timer();
     let mut task_builder=TaskBuilder::default();
     let body = || async {
         delete_build().await;
     };
     // 每天凌晨12点执行一次 ，超时的删除
-    task_builder.set_frequency_repeated_by_cron_str("0 0 23 * * *")
+    task_builder.set_frequency_repeated_by_cron_str(&config.clone().cros())
     .set_maximum_running_time(10)
     .spawn_async_routine(body).expect("task execute error")
 }

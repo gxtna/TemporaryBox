@@ -8,3 +8,11 @@ secret_key="ECU9cTmjwtgJWTf6GXHqL0JdtH8cA0Tb"
 region="eu-central-1"
 endpoint="http://localhost:9000"
 bucket_name="test1"
+
+[web]
+# 配置跨域的 有问题现在
+cros="http://localhost:5173"
+address="127.0.0.1:8080"
+
+[timer]
+cron="0 0 23 * * *"
