@@ -1,15 +1,23 @@
-use crate::minio_client::minio;
+use std::borrow::{Borrow, BorrowMut};
+
+use crate::minio_client::minio_server;
 use crate::pg_client::pg::{self, BoxInfo};
-use crate::utils::config;
-use crate::utils::nanoid;
+use crate::utils::{config::APPCONFIG, nanoid};
 use actix_cors::Cors;
-use actix_easy_multipart::tempfile::Tempfile;
-use actix_easy_multipart::*;
+use actix_multipart::MultipartError;
+//use actix_easy_multipart::{tempfile::Tempfile, MultipartForm};
+use actix_multipart::{
+    form::{tempfile::TempFile, MultipartForm},
+    Multipart,
+};
 use actix_web::http::header::{ContentDisposition, DispositionParam, DispositionType};
-use actix_web::{get, http, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, http, post, web, App, Error, HttpResponse, HttpServer, Responder};
+use anyhow::Ok;
 use chrono::Local;
-use log::error;
+use futures_util::future::ok;
+use futures_util::StreamExt as _;
 use serde::{Deserialize, Serialize};
+
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Param {
@@ -22,17 +30,12 @@ struct StorageTimeParam {
 }
 
 pub async fn client_server() -> std::io::Result<()> {
-    let config = config::read_conf()
-        .map_err(|err| {
-            error!("{}", err);
-        })
-        .unwrap()
-        .web();
+    let config = &APPCONFIG.web;
     let config_temp = config.clone();
     HttpServer::new(move || {
         // 跨域配置的时候 http 和https 要单独配置才行
         let cors = Cors::default()
-            .allowed_origin(&config.clone().cros())
+            .allowed_origin(&config.clone().cros)
             .allowed_methods(vec!["GET", "POST"])
             .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
             .allowed_header(http::header::CONTENT_TYPE)
@@ -43,7 +46,7 @@ pub async fn client_server() -> std::io::Result<()> {
             .service(upload_file)
             .service(extend_storage_time)
     })
-    .bind(config_temp.clone().address())?
+    .bind(config_temp.clone().address)?
     .run()
     .await
 }
@@ -53,27 +56,61 @@ async fn download_file(param: web::Query<Param>) -> impl Responder {
     let box_info = pg::select_box_info(param.pick_up_code.to_string())
         .await
         .unwrap();
-    let data = minio::get_object(&box_info.file_remote_name()).await;
+    let data = minio_server::get_object(&box_info.file_remote_name()).await;
     let cd = ContentDisposition {
-        disposition: DispositionType::FormData,
-        parameters: vec![DispositionParam::Filename(box_info.file_name().to_string())],
+        disposition: DispositionType::Attachment,
+        parameters: vec![DispositionParam::Filename(box_info.file_name.to_string())],
     };
     let mut builder = HttpResponse::Ok();
-    builder.content_type("application/octet-stream");
+    builder.content_type("application/octet-stream; charset=UTF-8");
     // 设置 代表前端可以在Content-Disposition获取数据
     builder.append_header(("Access-Control-Expose-Headers", "Content-Disposition"));
     builder.insert_header((actix_web::http::header::CONTENT_DISPOSITION, cd));
     builder.body(data)
 }
 
-#[derive(MultipartForm)]
+/* #[derive(MultipartForm)]
 struct Upload {
-    files: Tempfile,
-}
+    files: Vec<TempFile>,
+} */
 
 #[post("/upload_file")]
-async fn upload_file(files: MultipartForm<Upload>) -> impl Responder {
-    let items: Vec<&str> = files.files.file_name.as_ref().unwrap().split(".").collect();
+async fn upload_file(mut payload: Multipart) -> impl Responder {
+    while let Some(mut item) = payload.next().await {
+        //println!("{:#?}", item.unwrap());
+        let mut field = item.unwrap();
+
+        /*
+        let mut items: Vec<&str> = file_name.split(".").collect();
+        if items.len() == 1 {
+            items.push("txt");
+        }
+        let time = &Local::now().timestamp_millis().to_string();
+        let pick_up_code = nanoid::nano_id();
+        let pick_up_code_copy = pick_up_code.clone();
+        let remote_name = format!("{}-{}-{}.{}", items[0], time, pick_up_code, items[1]); */
+        while let Some(chunk) = field.next().await {
+            println!("{:#?}", field);
+            let file_name = field
+                .borrow_mut()
+                .content_disposition()
+                .get_filename()
+                .unwrap();
+            let chunk = chunk.unwrap().to_vec();
+            minio_server::put_object(chunk, file_name).await.unwrap();
+        }
+    }
+    HttpResponse::Ok().body("11")
+}
+
+/* #[post("/upload_file")]
+async fn upload_file(files: Vec<MultipartForm<Upload>>) -> impl Responder {
+    println!("{:?}", files.len());
+    /* let mut items: Vec<&str> = files.files.file_name.as_ref().unwrap().split(".").collect();
+    if items.len()==1 {
+        // 默认如果没有后缀的文件自动修改为txt格式
+        items.push("txt");
+    }
     let content = std::fs::read(files.files.file.path()).unwrap();
     let mut file_name = String::new();
     let name = items[0];
@@ -81,7 +118,7 @@ async fn upload_file(files: MultipartForm<Upload>) -> impl Responder {
     file_name.push_str(name);
     file_name.push_str(".");
     file_name.push_str(suffix);
-    let pick_up_code = nanoid::pick_up_code();
+    let pick_up_code = nanoid::nano_id();
     let mut remote_name = String::new();
     remote_name.push_str(name);
     remote_name.push_str("-");
@@ -92,7 +129,9 @@ async fn upload_file(files: MultipartForm<Upload>) -> impl Responder {
     remote_name.push_str(suffix);
     let pick_up_code_copy = pick_up_code.clone();
     let mut remote_name_copy = remote_name.clone();
-    let res = minio::put_object(content, &mut remote_name).await.unwrap();
+    let res = minio_server::put_object(content, &mut remote_name)
+        .await
+        .unwrap();
     if res == 200 {
         let insert_bool = pg::insert_box_info(BoxInfo::new(
             file_name,
@@ -104,13 +143,16 @@ async fn upload_file(files: MultipartForm<Upload>) -> impl Responder {
         if insert_bool {
             HttpResponse::Ok().body(pick_up_code_copy)
         } else {
-            minio::delete_object(&mut remote_name_copy).await.unwrap();
+            minio_server::delete_object(&mut remote_name_copy)
+                .await
+                .unwrap();
             HttpResponse::Ok().body("上传错误")
         }
     } else {
         HttpResponse::Ok().body("上传错误")
-    }
-}
+    } */
+
+} */
 
 #[post("/extend_storage_time")]
 async fn extend_storage_time(param: web::Json<StorageTimeParam>) -> impl Responder {

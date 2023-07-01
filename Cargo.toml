@@ -1,36 +1,48 @@
 [package]
-name = "TemporaryBox"
+name = "temporary_box"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version ="1.20.0", features = ["full"] }
+tokio = { version = "1.20.0", features = ["full"] }
 # 链接minio
-rust-s3="0.32.3"
+rust-s3 = "0.33.0"
 aws-region = "0.25.1"
-aws-creds = "0.34.0"
+aws-creds = "0.35.0"
+aws-sdk-s3 = "0.28.0"
+aws-config = "0.55.3"
+aws-credential-types = "0.55.3"
+aws-smithy-http = "0.55.3"
+aws-types = "0.55.3"
 # 数据库
-sqlx = {version="0.6.2",features = [ "runtime-tokio-native-tls" , "postgres","all-types","macros" ]}
+sqlx = { version = "0.6.2", features = [
+    "runtime-tokio-native-tls",
+    "postgres",
+    "all-types",
+    "macros",
+] }
 # 时间
-chrono = {version = "0.4.23",features=["serde"]}
+chrono = { version = "0.4.23", features = ["serde"] }
 # 序列化
-serde = {version = "1.0.147",features=["derive"]}
+serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0.88"
+serde_yaml = "0.9.21"
 #随机数生成
-nanoid="0.4.0"
+nanoid = "0.4.0"
 # web框架
 actix-rt = "2.7.0"
 actix-web = "4.2.1"
 actix-cors = "0.6.4"
+actix-multipart = "0.6.0"
 actix-easy-multipart = "3.0.0"
 # 定时任务
 delay_timer = "0.11.3"
 #日志两个要一起用
 log = "0.4.17"
 log4rs = "1.2.0"
-# 读取toml文件
-toml = "0.5.9"
-
+futures-util = "0.3.28"
 anyhow = "1.0.66"
+lazy_static = "1.4.0"
+zip = "0.6.6"

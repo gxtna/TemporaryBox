@@ -1,8 +1,9 @@
-use crate::minio_client::minio;
+use crate::minio_client::minio_server;
 use crate::pg_client::pg;
-use crate::utils::{config, time};
+use crate::utils::time;
 use delay_timer::prelude::*;
-use log::error;
+
+use super::config::APPCONFIG;
 
 pub async fn task_build() {
     let delay_timer_builder = DelayTimerBuilder::default().build();
@@ -12,19 +13,14 @@ pub async fn task_build() {
 }
 
 async fn timer_delete_task() -> Task {
-    let conf = config::read_conf()
-        .map_err(|err| {
-            error!("{}", err);
-        })
-        .unwrap()
-        .timer();
+    let conf = &APPCONFIG.timer;
     let mut task_builder = TaskBuilder::default();
     let body = || async {
         delete_build().await;
     };
     // 每天凌晨12点执行一次 ，超时的删除
     task_builder
-        .set_frequency_repeated_by_cron_str(&conf.clone().cros())
+        .set_frequency_repeated_by_cron_str(&conf.clone().cron)
         .set_maximum_running_time(10)
         .spawn_async_routine(body)
         .expect("task execute error")
@@ -35,7 +31,7 @@ async fn delete_build() {
     for info in box_infos {
         let subtract_time = date_time - info.update_time();
         if subtract_time.num_hours() > i64::from(info.storage_time()) {
-            minio::delete_object(&info.file_remote_name())
+            minio_server::delete_object(&info.file_remote_name())
                 .await
                 .expect("delete file error");
             pg::delete_box_info(info.file_remote_name()).await;

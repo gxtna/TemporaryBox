@@ -1,23 +1,23 @@
-use crate::utils::config;
+
+use crate::utils::config::APPCONFIG;
 use crate::utils::time;
 use chrono::NaiveDateTime;
+
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgConnection, Connection, Postgres};
-use log::error;
-
 
 #[derive(Deserialize, Serialize, Debug, sqlx::FromRow)]
 pub struct BoxInfo {
-    file_name: String,
-    file_remote_name: String,
-    bucket_name: String,
-    storage_time: i32,
-    pick_up_code: String,
-    login_type: i32,
-    file_remote_path: String,
-    system_type: i32,
-    create_time: NaiveDateTime,
-    update_time: NaiveDateTime,
+    pub file_name: String,
+    pub file_remote_name: String,
+    pub bucket_name: String,
+    pub storage_time: i32,
+    pub pick_up_code: String,
+    pub login_type: i32,
+    pub file_remote_path: String,
+    pub system_type: i32,
+    pub create_time: NaiveDateTime,
+    pub update_time: NaiveDateTime,
 }
 
 impl BoxInfo {
@@ -41,9 +41,6 @@ impl BoxInfo {
             update_time: date_time,
         }
     }
-    pub fn file_name(&self) -> String {
-        self.file_name.to_string()
-    }
     pub fn file_remote_name(&self) -> String {
         self.file_remote_name.to_string()
     }
@@ -55,16 +52,11 @@ impl BoxInfo {
     }
 }
 async fn sql_connection() -> PgConnection {
-    let conf = config::read_conf()
-        .map_err(|err| {
-            error!("{}", err);
-        })
-        .unwrap()
-        .postgres();
-    let url = conf.clone().url();
+    let conf = &APPCONFIG.postgres;
+    let url = conf.clone().url;
     let connection = PgConnection::connect(&url)
         .await
-        .expect("get database connection eror");
+        .expect("get database connection error");
     connection
 }
 
