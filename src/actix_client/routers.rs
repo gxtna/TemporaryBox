@@ -1,23 +1,21 @@
-use std::borrow::{Borrow, BorrowMut};
+
+use std::collections::HashMap;
+
 
 use crate::minio_client::minio_server;
 use crate::pg_client::pg::{self, BoxInfo};
+use crate::utils::zip_file;
 use crate::utils::{config::APPCONFIG, nanoid};
 use actix_cors::Cors;
-use actix_multipart::MultipartError;
-//use actix_easy_multipart::{tempfile::Tempfile, MultipartForm};
-use actix_multipart::{
-    form::{tempfile::TempFile, MultipartForm},
-    Multipart,
-};
+
+use actix_multipart::Multipart;
 use actix_web::http::header::{ContentDisposition, DispositionParam, DispositionType};
-use actix_web::{get, http, post, web, App, Error, HttpResponse, HttpServer, Responder};
-use anyhow::Ok;
+use actix_web::{get, http, post, web, App, HttpResponse, HttpServer, Responder};
+
 use chrono::Local;
-use futures_util::future::ok;
+
 use futures_util::StreamExt as _;
 use serde::{Deserialize, Serialize};
-
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Param {
@@ -69,38 +67,66 @@ async fn download_file(param: web::Query<Param>) -> impl Responder {
     builder.body(data)
 }
 
-/* #[derive(MultipartForm)]
-struct Upload {
-    files: Vec<TempFile>,
-} */
-
 #[post("/upload_file")]
 async fn upload_file(mut payload: Multipart) -> impl Responder {
-    while let Some(mut item) = payload.next().await {
-        //println!("{:#?}", item.unwrap());
+    let mut map = HashMap::new();
+    while let Some(item) = payload.next().await {
         let mut field = item.unwrap();
-
-        /*
-        let mut items: Vec<&str> = file_name.split(".").collect();
-        if items.len() == 1 {
-            items.push("txt");
-        }
-        let time = &Local::now().timestamp_millis().to_string();
-        let pick_up_code = nanoid::nano_id();
-        let pick_up_code_copy = pick_up_code.clone();
-        let remote_name = format!("{}-{}-{}.{}", items[0], time, pick_up_code, items[1]); */
         while let Some(chunk) = field.next().await {
-            println!("{:#?}", field);
-            let file_name = field
-                .borrow_mut()
-                .content_disposition()
-                .get_filename()
-                .unwrap();
+            let file_name = field.content_disposition().get_filename().unwrap();
             let chunk = chunk.unwrap().to_vec();
-            minio_server::put_object(chunk, file_name).await.unwrap();
+            map.insert(file_name.clone().to_string(), chunk);
         }
     }
-    HttpResponse::Ok().body("11")
+    let time = &Local::now().timestamp_millis().to_string();
+    let pick_up_code = nanoid::nano_id();
+    let pick_up_code_copy = pick_up_code.clone();
+    let zip = zip_file::zip_file(map).unwrap();
+    let mut remote_name = format!("{}-{}.{}", time, pick_up_code, "zip");
+    let mut remote_name_copy = remote_name.clone();
+    /* if minio_server::put_object(zip, &remote_name).await.unwrap() == 200 {
+        match pg::insert_box_info(BoxInfo::new(
+            file_name,
+            remote_name,
+            "test1".to_string(),
+            pick_up_code,
+        ))
+        .await
+        {
+            true => HttpResponse::Ok().body(pick_up_code_copy),
+            false => {
+                minio_server::delete_object(&mut remote_name_copy)
+                    .await
+                    .unwrap();
+                return HttpResponse::Ok().body("上传错误");
+            }
+        };
+    } else {
+        HttpResponse::Ok().body("上传错误")
+    } */
+    let res = minio_server::put_object(zip, &mut remote_name)
+        .await
+        .unwrap();
+    if res == 200 {
+        let insert_bool = pg::insert_box_info(BoxInfo::new(
+            remote_name.clone(),
+            remote_name,
+            "test1".to_string(),
+            pick_up_code,
+        ))
+        .await;
+        if insert_bool {
+            HttpResponse::Ok().body(pick_up_code_copy)
+        } else {
+            minio_server::delete_object(&mut remote_name_copy)
+                .await
+                .unwrap();
+            HttpResponse::Ok().body("上传错误")
+        }
+    } else {
+        HttpResponse::Ok().body("上传错误")
+    }
+    //
 }
 
 /* #[post("/upload_file")]

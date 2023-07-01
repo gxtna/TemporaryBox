@@ -10,3 +10,5 @@ async fn main() {
     utils::task::task_build().await;
     actix_client::routers::client_server().await.unwrap();
 }
+
+
