@@ -84,26 +84,6 @@ async fn upload_file(mut payload: Multipart) -> impl Responder {
     let zip = zip_file::zip_file(map).unwrap();
     let mut remote_name = format!("{}-{}.{}", time, pick_up_code, "zip");
     let mut remote_name_copy = remote_name.clone();
-    /* if minio_server::put_object(zip, &remote_name).await.unwrap() == 200 {
-        match pg::insert_box_info(BoxInfo::new(
-            file_name,
-            remote_name,
-            "test1".to_string(),
-            pick_up_code,
-        ))
-        .await
-        {
-            true => HttpResponse::Ok().body(pick_up_code_copy),
-            false => {
-                minio_server::delete_object(&mut remote_name_copy)
-                    .await
-                    .unwrap();
-                return HttpResponse::Ok().body("上传错误");
-            }
-        };
-    } else {
-        HttpResponse::Ok().body("上传错误")
-    } */
     let res = minio_server::put_object(zip, &mut remote_name)
         .await
         .unwrap();
@@ -126,59 +106,7 @@ async fn upload_file(mut payload: Multipart) -> impl Responder {
     } else {
         HttpResponse::Ok().body("上传错误")
     }
-    //
 }
-
-/* #[post("/upload_file")]
-async fn upload_file(files: Vec<MultipartForm<Upload>>) -> impl Responder {
-    println!("{:?}", files.len());
-    /* let mut items: Vec<&str> = files.files.file_name.as_ref().unwrap().split(".").collect();
-    if items.len()==1 {
-        // 默认如果没有后缀的文件自动修改为txt格式
-        items.push("txt");
-    }
-    let content = std::fs::read(files.files.file.path()).unwrap();
-    let mut file_name = String::new();
-    let name = items[0];
-    let suffix = items[1];
-    file_name.push_str(name);
-    file_name.push_str(".");
-    file_name.push_str(suffix);
-    let pick_up_code = nanoid::nano_id();
-    let mut remote_name = String::new();
-    remote_name.push_str(name);
-    remote_name.push_str("-");
-    remote_name.push_str(&Local::now().timestamp_millis().to_string());
-    remote_name.push_str("-");
-    remote_name.push_str(&pick_up_code);
-    remote_name.push_str(".");
-    remote_name.push_str(suffix);
-    let pick_up_code_copy = pick_up_code.clone();
-    let mut remote_name_copy = remote_name.clone();
-    let res = minio_server::put_object(content, &mut remote_name)
-        .await
-        .unwrap();
-    if res == 200 {
-        let insert_bool = pg::insert_box_info(BoxInfo::new(
-            file_name,
-            remote_name,
-            "test1".to_string(),
-            pick_up_code,
-        ))
-        .await;
-        if insert_bool {
-            HttpResponse::Ok().body(pick_up_code_copy)
-        } else {
-            minio_server::delete_object(&mut remote_name_copy)
-                .await
-                .unwrap();
-            HttpResponse::Ok().body("上传错误")
-        }
-    } else {
-        HttpResponse::Ok().body("上传错误")
-    } */
-
-} */
 
 #[post("/extend_storage_time")]
 async fn extend_storage_time(param: web::Json<StorageTimeParam>) -> impl Responder {
